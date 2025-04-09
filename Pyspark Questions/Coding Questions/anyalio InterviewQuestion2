@@ -1,0 +1,27 @@
+You have a Delta Table, and you need to implement an upsert operation (update if exists, 
+insert if not). Write a Databricks PySpark solution using MERGE. 
+
+
+from delta.tables import DeltaTable
+from pyspark.sql.functions import expr
+
+# Path to your Delta table (or use table name if registered in metastore)
+delta_table_path = "/mnt/datalake/sales_data_delta"
+
+# Load Delta Table
+delta_table = DeltaTable.forPath(spark, delta_table_path)
+
+# Sample updates DataFrame
+updatesDf = spark.createDataFrame([
+    ("123", "2023-05-06 14:23:34", "item_x", "item_123-X", "a customer", 25, 3, "japan", 100, 200, 1),
+    ("456", "2023-06-01 10:12:00", "item_y", "item_456-Y", "new customer", 50, 2, "usa", 150, 250, 2)
+], ["id", "sale_datetime", "item_name", "item_code", "customer_name", "price", "sale_qty",
+    "location", "weight", "length", "ref_value"])
+
+# Perform Upsert (Merge)
+delta_table.alias("target").merge(
+    updatesDf.alias("source"),
+    "target.id = source.id"  # Match condition on primary key or unique ID
+).whenMatchedUpdateAll() \
+ .whenNotMatchedInsertAll() \
+ .execute()
