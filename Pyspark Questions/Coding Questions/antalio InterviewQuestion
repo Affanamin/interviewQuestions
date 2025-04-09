@@ -1,0 +1,5 @@
+conWaterDF.withColumn(partition_key, F.col("interval_end_time") - F.expr("INTERVAL 30 
+MINUTES")) 
+F.col("interval_end_time") - F.expr("INTERVAL 30 MINUTES") 
+#attempts to 
+#subtract 30 minutes from a timestamp column.
