@@ -1,0 +1,45 @@
+Q1: Normalize below json, use Databricks (Spark) framework for ETL Code except SQL. 
+{ "id": "123", "sale_datetime": "2023-05-06 14:23:34", "ref_values": [1,2,3,4,5], 
+"payload":"location|japan|weight|100|length|200", "item_name":"item_x", 
+"item_code":"item_123-X", "customer_name":"a customer", "price": 25, "sale_qty": 3 }
+
+
+Solution:
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import split, col, explode, lit
+
+# Initialize Spark Session
+spark = SparkSession.builder.appName("NormalizeJSON").getOrCreate()
+
+# Create DataFrame from JSON
+data = [{
+    "id": "123",
+    "sale_datetime": "2023-05-06 14:23:34",
+    "ref_values": [1, 2, 3, 4, 5],
+    "payload": "location|japan|weight|100|length|200",
+    "item_name": "item_x",
+    "item_code": "item_123-X",
+    "customer_name": "a customer",
+    "price": 25,
+    "sale_qty": 3
+}]
+
+df = spark.createDataFrame(data)
+
+# Step 1: Split the payload into individual fields
+payload_split = split(col("payload"), "\\|")
+
+df_transformed = df.withColumn("location", payload_split.getItem(1)) \
+                   .withColumn("weight", payload_split.getItem(3).cast("int")) \
+                   .withColumn("length", payload_split.getItem(5).cast("int"))
+
+# Step 2: Explode the ref_values array into separate rows
+df_exploded = df_transformed.withColumn("ref_value", explode(col("ref_values")))
+
+# Step 3: Drop intermediate columns if not needed
+final_df = df_exploded.drop("payload", "ref_values")
+
+# Show final normalized DataFrame
+final_df.show(truncate=False)
