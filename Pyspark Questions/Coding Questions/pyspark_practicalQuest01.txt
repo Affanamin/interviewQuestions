@@ -1,0 +1,42 @@
+🚀 JP Morgan PySpark Interview Questions: 🚀 
+
+Problem Statement: Bank of Ireland has requested that you detect invalid transactions in December 2022. An invalid transaction is one that occurs outside of the bank’s normal business hours. The following are the hours of operation for all branches: Monday – Friday: 08:00–16:00 Saturday & Sunday: Public Holidays: 25th and 26th December You need to find the transaction IDs of all invalid transactions that occurred in December 2022. This is problem statement give me solution how to find froud transaction give me example with pyspark 
+
+Solution: 
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, to_timestamp, hour, date_format, dayofweek
+
+
+spark = SparkSession.builder.appName("InvalidTransactions").getOrCreate()
+
+
+data = [
+ (1, "2022-12-05 10:00:00"),  # Valid (Monday, within time range)
+ (2, "2022-12-10 12:00:00"),  # Invalid (Saturday)
+ (3, "2022-12-12 08:30:00"),  # Invalid (Monday, before 09:00)
+ (4, "2022-12-26 11:00:00"),  # Invalid (Public Holiday)
+ (5, "2022-12-07 17:30:00"),  # Invalid (Wednesday, after 16:00)
+ (6, "2022-12-25 15:00:00"),  # Invalid (Public Holiday)
+]
+
+
+columns = ["transaction_id", "transaction_time"]
+df = spark.createDataFrame(data, columns)
+
+df = df.withColumn("transaction_time", to_timestamp(col("transaction_time")))
+
+
+df = df.withColumn("hour", hour(col("transaction_time"))) \
+ .withColumn("day_of_week", dayofweek(col("transaction_time"))) \
+ .withColumn("date", date_format(col("transaction_time"), "yyyy-MM-dd"))
+
+
+invalid_transactions = df.filter(
+ (col("day_of_week").isin([7, 1])) |  # Saturday (7) & Sunday (1)
+ (col("hour") < 8) | (col("hour") >= 16) |  # Outside 08:00-16:00
+ (col("date").isin(["2022-12-25", "2022-12-26"]))  # Public Holidays
+)
+
+invalid_transactions .("transaction_id", "transaction_time").show()

@@ -1,0 +1,21 @@
+Scenario: 
+You have a dataset where mobile numbers are stored in a single column in the format "XXX-XXXXXXXX", and you need to separate the STD code and the phone number into distinct columns for further processing. How would you approach this task using PySpark?
+
+
+Question:
+
+Sample dataset with 'Name' and 'Phone_Number' columns
+data = [("Joanne", "040-20215632"), ("John", "042-20215762"), ("Tom", "052-20255612")] columns = ["Name", "Phone_Number"]
+Creating the DataFrame
+df = spark.createDataFrame(data, columns)
+Display the original DataFrame
+display(df)
+
+Answer:
+
+from pyspark.sql.function
+
+df1 = df.withColumn("std_codes",split(df.Phone_Number,"-").getItem(0)) \
+.withColumn("phone",split(df.Phone_Number,"-").getItem(1))
+
+display(df1)
