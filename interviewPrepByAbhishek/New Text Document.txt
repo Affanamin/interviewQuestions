@@ -1,0 +1,30 @@
+Key Responsibilities:
+
+ETL and Data Pipeline Development
+• Implement, and maintain scalable ETL processes using Azure Data Factory and Azure Synapse Analytics under the direction of the Data & Analytics Manager.
+• Transform raw data into clean, accurate datasets for analysis and reporting
+• Implement data quality checks and ensure data integrity throughout the ETL process
+• Timely response to alert monitoring on pipeline failures, following See’s Analytics processes for recovery and root cause analysis
+
+Machine Learning and AI Integration
+• Develop and maintain machine learning workflows using Azure Machine Learning
+• Collaborate with analysts/scientists to implement and deploy ML models
+• Utilize AI and ML to enhance data extraction, transformation, and loading processes
+Data Architecture
+• Utilizing the requirements provided by the Manager of Data & Analytics, implement data models using Azure SQL Database.
+• Manage data storage solutions, including Azure Data Lake Storage
+• Ensure data security, implement access controls, and maintain data governance policies
+• Collaborate with Sees Analytics team to create data components that support analytics initiative
+Required Skills and Qualifications
+• Strong proficiency in ETL tools and processes, particularly Azure Data Factory
+• Expertise in SQL for complex queries and stored procedures
+• Experience with Azure Synapse Analytics and Azure Data Lake Storage
+• Proficiency in Python for data manipulation and analysis
+• Understanding of machine learning concepts and their application in data engineering
+• Experience with Azure Machine Learning and AI services
+• Knowledge of data modeling techniques and best practices
+• Strong problem-solving and analytical skills
+• Certifications in Azure Data Engineering or AI Engineering
+• Experience with Azure Databricks and Apache Spark
+• Familiarity with Azure Cognitive Services for AI integration 
+
