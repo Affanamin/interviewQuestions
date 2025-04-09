@@ -1,0 +1,11 @@
+what are the key differences b/w spark and map reduce ?
+
+Map reduce was a go to framework before spark for distributed computing, the reason we switched to spark is that map reduce has 2 
+processes, One is map where it saves all data distributedly to disk and the reduce process get the data from disk and perform computation
+
+Spark works as in memory computation so all the data will be stored in RAM, and it is very fast then mapreduce. 
+
+Spark also stored the data to disk, right ? then what is the difference ?
+
+yes sark stores the data to disk BUT only when we explicitly says that to store in disk or when the RAM space goes to its end otherwise not,
+and with good configurations of spark it can be overcome as well
