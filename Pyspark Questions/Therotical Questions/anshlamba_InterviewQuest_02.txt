@@ -1,0 +1,4 @@
+what is spark context ?
+
+Spark context is the main entry point for every spark job, it creates connection or acts as a bridge between driver program 
+and cluster manager (YARN). So that Yarn can negotiate resources to make available for that spark job.
