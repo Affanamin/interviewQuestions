@@ -1,0 +1,36 @@
+Q5: Read Data from delta lake 
+df = spark.read.format("delta").load("/mnt/delta/my_table") 
+Read a specific version using time travel: 
+df = spark.read.format("delta").option("versionAsOf", 5).load("/mnt/delta/my_table") 
+Reading Data at a Specific Timestamp 
+df = spark.read.format("delta").load("/mnt/delta/my_table").filter("customer_id = 123")
+
+
+Q6: Partitioning and Z-Ordering in Delta 
+Challenge: Given a Delta Table with large data, how do you optimize reads? 
+spark.sql("OPTIMIZE delta_table ZORDER BY (customer_id)")
+
+
+Q6: For instance, we have a delta table with huge number of records for e.g. it has 1 tb of 
+records now they want only first record and last record without full table scan, how you 
+can do it in databricks.
+
+  1. Using Metadata (_delta_log) - Most Efficient 
+  Delta tables maintain a transaction log (_delta_log). Instead of scanning all data, 
+  we can query the metadata to get the first and last records efficiently.
+
+# Fetch the First Record (Based On Earliest Commit)
+dfFirst = spark.sql(""" select * from delta.`/mnt/delta/my_table ORDER BY _commit_version ASC Limit 1`""")
+dfFirst.show()
+
+# Fetch the Last Record (Based On Latest Commit)
+dfLast = spark.sql(""" select * from delta.`/mnt/delta/my_table ORDER BY _commit_version DESC Limit 1`""")
+dfLast.show()
+
+  2. Using VersionAsOf (Time Travel): It is applicable if version tracking is enabled.
+
+df_first = spark.read.format("delta").option("versionAsOf", 0).load("/mnt/delta/my_table")
+
+df_last = 
+spark.read.format("delta").option("versionAsOf","latest").load("/mnt/delta/my_table")
+
