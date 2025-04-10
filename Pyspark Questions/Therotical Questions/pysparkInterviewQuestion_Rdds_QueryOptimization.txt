@@ -1,0 +1,25 @@
+RDDs are the lowest datastructures available in spark, it doesnot have any structure or schema. It is lika a combination of objects, those objs can be stored in a list and that list can be distributed among number of machines. we can not apply any type of optimization as well, it is very slow
+
+
+then we have dataframes which actually solved many problems which we are facing using RDDs, DF has tabular structure, has schema, its easy to use, almost all libs are compatible to work with dataframe, very popular almost all data professionals uses it
+
+
+Then why do we have dataset ?
+Dataset is like a dataframe but with some more featres, basically it is connecting 2 worlds, RDDs & dataframes plus some other features like typesafe and functional program
+
+
+
+then why we donot use dataset and uses dataframes then ? Its because dataset are not comatible with python   (pyspark) it is only compatible with scala (spark-scala) & dataframes are very easy to use, you can use sql like apis, if you also workk with pandas then you need to have same language like python to work with in pyspark and python-pandas
+
+
+
+What is Query Optimization, How spark optimizes the query ?
+
+In spark when you write a query using sparkSQL, so before going directly to cluster for processing, spark first creats LOGICAL PLAN, what's in logical plan ?
+
+- lets say in you code you have mentioned number of transformations like select, where, filter, joins, windows and all. In this logical plan it first creates order of each transformations like it can use joins first or window function first, it will smartly just decides the order on which order should this query needs to be run so that it can be optimized, it all will be done using CATALYST OPTIMIZER. Thorigh this obviously our query will be efficient and runs faster.
+
+- Once the logical plan is ready then spark creates a PHYSICAL PLAN, In here it compares the cost of each transformations against cost model and select least expensive transformation from here, so for .e.g. you ave to perform join in you query in physical plan it compares join's cost plan, in joins we have so many types of joins like sort merge join, shuffle join, hash join, etc.. so it picks up most inexpensive one.
+
+- Once it decides the best plan, the least expensive one then this physical plan converts inot RDDs, now theses RDDs will be goiung to diver worker nodes distributedly so that it can executes in parallel.
+
