@@ -1,3 +1,7 @@
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
 RDDs are the lowest datastructures available in spark, it doesnot have any structure or schema. It is like a combination of objects, 
 those objs can be stored in a list and that list can be distributed among number of machines. we can not apply any type of 
 optimization as well, it is very slow
@@ -15,8 +19,12 @@ Dataset is like a dataframe but with some more featres, basically it is connecti
 then why we donot use dataset and uses dataframes then ? Its because dataset are not comatible with python   (pyspark) it is only compatible with scala (spark-scala)
  & dataframes are very easy to use, you can use sql like apis, if you also workk with pandas then you need to have same language like python 
 to work with in pyspark and python-pandas
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
 
 What is Query Optimization, How spark optimizes the query ?
 
@@ -35,9 +43,20 @@ in joins we have so many types of joins like sort merge join, shuffle join, hash
 nodes distributedly so that it can executes in parallel.
 
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
 <b> What is Spark Session ? </b>
 
 spark session is the newer entry point for the spark (after spark 2.0), before spark 2.0 we were using 3 types of spark entry points 1. spark context 2. Sql Context 3. Hive context
 
 But after spark session is been launched after spark 2.0 there is no need to manage each contexts seperately, spark session takes the responsibility and now new entry point after spark 2.0. 
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
