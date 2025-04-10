@@ -139,6 +139,11 @@ So for e.g you are processing the data and you have one big partition and others
 
 How to enable AQE in spark ? It is auto enabled now after spark 3.2+
 
+AQE applies to all queries that are:
+
+Non-streaming
+Contain at least one exchange (usually when there’s a join, aggregate, or window), one sub-query, or both.
+
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
