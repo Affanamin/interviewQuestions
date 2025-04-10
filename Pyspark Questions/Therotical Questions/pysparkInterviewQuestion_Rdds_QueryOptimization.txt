@@ -60,3 +60,22 @@ But after spark session is been launched after spark 2.0 there is no need to man
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+When to use Cache() and persist()?
+
+when we need to use the intermediate results multiple times then we can just store the result (dataframe) in memory or disk. 
+
+What is the difference b/w Cache() and persist()?
+
+df.persist(StorageLevel.MEMORY_AND_DISK) ---->> It beomes CACHE()
+intead of writing this again & again, spark has made a dedicated function for it which is :
+df.cache() # it is actually same
+
+We rarely use others:
+df.persist(StorageLevel.MEMORY_ONLY)
+df.persist(StorageLevel.DISK_ONLY)
+df.persist(StorageLevel.MEMORY_AND_DISK_SERIALIZED) # first try to save the data to memory, then to disk
+
