@@ -34,3 +34,10 @@ in joins we have so many types of joins like sort merge join, shuffle join, hash
 - Once it decides the best plan, the least expensive one then this physical plan converts inot RDDs, now theses RDDs will be goiung to diver worker 
 nodes distributedly so that it can executes in parallel.
 
+
+<b> What is Spark Session ? <\b>
+
+spark session is the newer entry point for the spark (after spark 2.0), before spark 2.0 we were using 3 types of spark entry points 1. spark context 2. Sql Context 3. Hive context
+
+But after spark session is been launched after spark 2.0 there is no need to manage each contexts seperately, spark session takes the responsibility and now new entry point after spark 2.0. 
+
