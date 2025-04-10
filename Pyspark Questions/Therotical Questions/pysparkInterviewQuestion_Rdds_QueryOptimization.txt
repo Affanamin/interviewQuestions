@@ -108,3 +108,41 @@ What are the advantages of Delta lake over traditional file formats ?
 
 so these are advantages of every fileformat and on parquet file format as well.
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Driver OOM and Executor OOM:
+
+Driver OOM occurs when te driver node does not have enogh memory to handle the data set, for e.g if a user runs .collect() on a data set which has greater memory than driver memory
+
+Executor OOM can be occured due to so many reasons, but one reason is most common which is when your data is highly skewed and dataset is greater than executor memory which is performing any transformation than it can appen, How to mitigate this issue ? you can always increase the driver of executor memeory and if you have reached to the limit of executor memory than there are some optiomization techniques like AQE (Adaptive Query Execution) and salting.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Q: AQE (Adaptive Query Execution):
+It is a spark optimization technique which optimizes the query execution at runtime, It has 3 major powerful features:
+
+1. Dynamic Partition Pruning: So for e.g you are processing the data and there are many many small partitions (without AQE), with this Dynamic Partition Pruning in AQE, it will coalesce all partitions and decrease the number of partitions, create 3 big partitions instead of 10 small partitions and save us from Small file problem as well which can hault the processing.
+
+2. Join Strategies Optimizations: So for e.g you are processing the data and you have applied join on 2 big data frames, but then you have also applied filters on them too, so this feature will check and if there is a possibility of run broadcast join instead of shuffle join or anuy other costly join it will run broadcast join automatically
+
+3. Dynamically Optimizes Skewness: 
+So for e.g you are processing the data and you have one big partition and others are small one then with feature of AQE will take care of this and break down that big partition in smaller ones so that parallelism can be aceived more accurately.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
