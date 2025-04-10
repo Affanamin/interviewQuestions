@@ -35,7 +35,7 @@ in joins we have so many types of joins like sort merge join, shuffle join, hash
 nodes distributedly so that it can executes in parallel.
 
 
-<b> What is Spark Session ? <\b>
+<b> What is Spark Session ? </b>
 
 spark session is the newer entry point for the spark (after spark 2.0), before spark 2.0 we were using 3 types of spark entry points 1. spark context 2. Sql Context 3. Hive context
 
