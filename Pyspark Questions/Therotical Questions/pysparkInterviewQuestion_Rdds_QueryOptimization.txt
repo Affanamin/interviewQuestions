@@ -149,7 +149,9 @@ Contain at least one exchange (usually when there’s a join, aggregate, or wind
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
+Q. What is salting? 
 
+salting is a method we used previously to avoid data skewness, How it works is that for e.g you are processing the data and you have id column as a Key column, in that there are many 1's, some 2's and very few 3's, So in that case when the data will be joining it will be skewed so we will add salt key here, it could be like 1-a,1-b,1-c and we will add this salt key to our keyin roun robin fashion, now if the join is applied then it should not be skewed because each partitions will have a chance to process the data.  
 
 
 
