@@ -79,3 +79,18 @@ df.persist(StorageLevel.MEMORY_ONLY)
 df.persist(StorageLevel.DISK_ONLY)
 df.persist(StorageLevel.MEMORY_AND_DISK_SERIALIZED) # first try to save the data to memory, then to disk
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Lazy Evaluation in Spark:
+
+pyspark lazyly evaluate your code, lets say you have dataframe and you have performed multiple transformations like filter, groupby,sort , what would you think it will run right away once you submit the job ? No. It stores all the information and creates a Logical Execution Plan for all the tranformations. It will exectue it when you will trigger ACTION.
+
+- So we have some ACTION operations and when we use that than only it execute than and before that it will be stored in logical plan thats it
+
+- What are ACTION, df.show(), df.collect() all are action
+- If you have hundreds of transformations in spark, if you dont trigger action no transformation will be executed.
+
