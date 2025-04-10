@@ -137,6 +137,8 @@ It is a spark optimization technique which optimizes the query execution at runt
 3. Dynamically Optimizes Skewness: 
 So for e.g you are processing the data and you have one big partition and others are small one then with feature of AQE will take care of this and break down that big partition in smaller ones so that parallelism can be aceived more accurately.
 
+How to enable AQE in spark ? It is auto enabled now after spark 3.2+
+
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
