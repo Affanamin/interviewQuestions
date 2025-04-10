@@ -94,3 +94,17 @@ pyspark lazyly evaluate your code, lets say you have dataframe and you have perf
 - What are ACTION, df.show(), df.collect() all are action
 - If you have hundreds of transformations in spark, if you dont trigger action no transformation will be executed.
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What are the advantages of Delta lake over traditional file formats ?
+
+- ACID transactions (Atomacity, Consistency, Isolation, Durability) Using delta log
+- Schema Enforcement and schema evolution: By default spark applies schema on read, while pyspark applies schema on write and if there is some change in schema it will thorugh an error, But we can evolve that things as well on some cases
+- Optimization techniques
+
+so these are advantages of every fileformat and on parquet file format as well.
+
