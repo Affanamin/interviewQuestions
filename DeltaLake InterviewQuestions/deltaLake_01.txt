@@ -1,0 +1,113 @@
+
+Q: How can you mount datalake containers to databricks notebooks ?
+it all revolves around :
+
+AppRegistration (Create and register your app there)-> Get ApplicationId and Tenant Id from there.
+then, create secret from Certificate and secret (KeyVault) 
+Link KeyValut secret with databricks note book using Secret Scope
+using: dbutils.secrets.list(scope="yourScopeNameCreatedInSecretScope")
+storageAccountAccessKey = dbutils.secrets.get('tt-hc-kv-02', 'tt-adls-access-key-dev')
+-> then add these all information on dbutils.mount 
+
+Practice it again and again so that it will be in my subconcious. 
+-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------
+
+If you want to parameterize your notebook in databricks, How would you do that ?
+
+I will be using dbutils.widgets property present in databricks to parameterize my notebooks in databricks.
+
+dbutils.secret
+
+dbutils.secrets.list(scope="yourScopeNameCreatedInSecretScope")
+
+-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------
+
+DELTA LAKE:
+
+1. 
+So for e.g you have data in source (in parquet format), and If you insert that data into deltination in delta format it will be saved as parquet format itself, But there is a catch, with this parquet format we have delta log (or transaction log) as well on top of it, and that log file (or transaction log) contains each meta data information of destination delta file, while previously in parquet format only there is not delta log file so all the metadata remains in the parquet file itself. 
+
+So, just imagine before in parquet format if you need meta data of files, spark needs to read from each file in parquet format, but not any more in delta, because all data related metadata will be stored in delta log (or transaction log) on top of it. 
+
+That is why we called delta format more powerful and optimized.
+
+
+2. Data versioning, GhostMode to deletion records
+Describe History table (Shows all the versions and all the changes uptill now)
+
+3. Why do we need the history ???
+
+Because deltalakes also provide time travel feature, so if you delete any record it will not delete any record physically instead it will add the entry in    (deletion entry) in delta log (or transaction log). So that if you want to roll back you can easily roll back using time travel feature and get that version restored as your updated table, using following code:
+
+%sql
+
+RESTORE TABLE salesdb.exttable TO VERSION AS OF 2;
+
+
+SO, If you want to delete the data from delta table then ? 
+
+Yes, you can using VACCUM command, What VACCUM command will do ?
+
+
+So for eg you have 3 data files or partitions and delta log has ghost previous 2 partitions and now using only latest partition and you also certain that you wont need those partitions as well, then you can use VACCUM command, it will physically delete (hard delete) those partitions, we cannot use time travel then because once these files will gets deleted time travel wont be happen.
+
+VACCUM salesdb.exttable;
+
+Remember one thing more, the default time for removing any file from delta lake is 7 days, which menas these files wont be deleted before 7 days even if you run VACCUM command.
+
+
+Now What if you want to delete the files right now and I dont care about default time frame, then ?
+
+VACCUM salesdb.exttable RETAIN 0 Hours;
+
+
+
+-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------
+
+
+OPTIMIZE DELTA TABLES::::::::::::::::::
+
+How to optimize the delta tables to improve the performance.
+
+%sql
+OPTIMIZE salesDB.exttable;
+
+ZORDER BY
+
+%sql
+OPTIMIZE salesDB.exttable ZORDER BY (id);
+
+It is always better to read from lesser partititons even if they are bigger in size. For e.g If I want to read data from 4 different partitions (1 GB each) distributed in different machines VS If I want to read data from 2 different partitions (2 GB each) distributed in different machines, the second approach is more efficient. 
+
+Now when we run OPTIMIZE command what it does ? It combines all small small partitions into bigger partitions (concept of coalese in pyspark), so that it improves the performance and efficiency.
+
+Ok, thats great, when we ran zorder by then how it became more efficient ?
+
+zorder By command sorted the data based on column we gave (ID in our example), we can add any column here, always put that column which you wanted to run in a query in where clause later. So, It will sort the data in acsending, descending order in both data partitions of 2,2 GB.
+
+- Yes it is a kind of indexiong which SQL (traditional databases) uses for query optimizations, here we have Zorder and optimze syntax to do that.   
+
+So, What is the biggent advantages of it ?? It is called DATA SKIPING, where for eg:
+
+if there are 4 partitions of 1 GB each and having ids like:
+
+partition-A: 3,7
+partition-B: 1,8
+partition-C: 2,5
+partition-D: 4,6
+
+So when you run this command: 
+%sql
+OPTIMIZE salesDB.exttable ZORDER BY (id);
+
+I t will be like 2 partitions of 2 GB and IDs will be sorted in ascending Order:
+
+partition-A: 1,2,3,4
+partition-B: 5,6,7,8
+
+So, now if you run select * from table where Id = 3;
+
+Then the executor will go straight directly to partition-A and get the desired data, and skips all the oter partitions, it is called DATA SKIPPING.
