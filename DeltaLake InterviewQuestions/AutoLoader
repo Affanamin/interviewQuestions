@@ -1,0 +1,26 @@
+Incremental Loader with AUTO LOADER:
+
+- Streaming Dataframe: Continous form of data, For autoloader it is important to have streaming dataframe so that it can just contionusly incrementaly load the data into the destination, so how can we create this type of dataframe ? like this:
+
+df = Spark.readStream.format('cloudfiles')\
+		.option('cloudFiles.format','parquet')\
+
+
+Basically we need to store the schema of each file so that our detination table which will be using writeStream method can actually use that schema to write the data in a destination folder, and for this thing we store the data in a specific location, and we call it as checkpoint. So lets create that as well:
+
+df = Spark.readStream.format('cloudfiles')\
+		.option('cloudFiles.format','parquet')\
+		.option('cloudFiles.schemaLocation','abfss://path/checkpoint')\
+		.load('/path/path/...')
+
+Writing Data Now:
+
+## Now here when we writing data to destination we again go towards checkpoint location so that our streaming query add that this file is already being read to the check point location OR you can say that streaming query needs to save the current state of stream to the checkpoint location. 
+
+df.writeStream.format('delta')\
+				.option('checkpointLocation','abfss://path/checkpoint')\
+				.trigger(processingTime='5 seconds') # if we donot write anything here , it will work on default mode (0.05 seconds) \
+				.start('abfss://path/')
+
+
+it gives QPL (Query Progress log) to monitor
