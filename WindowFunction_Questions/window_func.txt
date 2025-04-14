@@ -1,0 +1,11 @@
+Where to use Window Funtion: 
+
+usecase 1: Find the top N products, employees, or transactions in each category
+
+usecase2: Calculate running totals & moving averages for trend analysis
+
+usecase3: Get previous & next row values for time-series comparisons
+
+usecase 4: Rank records without losing details using row_number(), rank(), and dense_rank()
+
+usecase 5: Find first & last values in each group effortlessly
