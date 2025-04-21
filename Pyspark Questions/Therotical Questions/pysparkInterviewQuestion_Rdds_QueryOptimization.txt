@@ -103,8 +103,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 What are the advantages of Delta lake over traditional file formats ?
 
 - ACID transactions (Atomacity, Consistency, Isolation, Durability) Using delta log
-- Schema Enforcement and schema evolution: By default spark applies schema on read, while pyspark applies schema on write and if there is some change in schema it will thorugh an error, But we can evolve that things as well on some cases
+- Schema Enforcement and schema evolution: By default spark applies schema on read, while pyspark applies schema on write and if 
+there is some change in schema it will thorugh an error, But we can evolve that things as well on some cases
 - Optimization techniques
+- Time travel
 
 so these are advantages of every fileformat and on parquet file format as well.
 
@@ -116,9 +118,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 Driver OOM and Executor OOM:
 
-Driver OOM occurs when te driver node does not have enogh memory to handle the data set, for e.g if a user runs .collect() on a data set which has greater memory than driver memory
+Driver OOM occurs when te driver node does not have enogh memory to handle the data set, for e.g if a user runs .collect() on 
+a data set which has greater memory than driver memory
 
-Executor OOM can be occured due to so many reasons, but one reason is most common which is when your data is highly skewed and dataset is greater than executor memory which is performing any transformation than it can appen, How to mitigate this issue ? you can always increase the driver of executor memeory and if you have reached to the limit of executor memory than there are some optiomization techniques like AQE (Adaptive Query Execution) and salting.
+Executor OOM can be occured due to so many reasons, but one reason is most common which is when your data is highly skewed and 
+dataset is greater than executor memory which is performing any transformation than it can appen, How to mitigate this issue ? 
+you can always increase the driver of executor memeory and if you have reached to the limit of executor memory than 
+there are some optiomization techniques like AQE (Adaptive Query Execution) and salting.
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -130,12 +136,17 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 Q: AQE (Adaptive Query Execution):
 It is a spark optimization technique which optimizes the query execution at runtime, It has 3 major powerful features:
 
-1. Dynamic Partition Pruning: So for e.g you are processing the data and there are many many small partitions (without AQE), with this Dynamic Partition Pruning in AQE, it will coalesce all partitions and decrease the number of partitions, create 3 big partitions instead of 10 small partitions and save us from Small file problem as well which can hault the processing.
+1. Dynamic Partition Pruning: So for e.g you are processing the data and there are many many small partitions (without AQE), 
+with this Dynamic Partition Pruning in AQE, it will coalesce all partitions and decrease the number of partitions, 
+create 3 big partitions instead of 10 small partitions and save us from Small file problem as well which can hault the processing.
 
-2. Join Strategies Optimizations: So for e.g you are processing the data and you have applied join on 2 big data frames, but then you have also applied filters on them too, so this feature will check and if there is a possibility of run broadcast join instead of shuffle join or anuy other costly join it will run broadcast join automatically
+2. Join Strategies Optimizations: So for e.g you are processing the data and you have applied join on 2 big data frames, 
+but then you have also applied filters on them too, so this feature will check and if there is a possibility of run 
+broadcast join instead of shuffle join or anuy other costly join it will run broadcast join automatically
 
 3. Dynamically Optimizes Skewness: 
-So for e.g you are processing the data and you have one big partition and others are small one then with feature of AQE will take care of this and break down that big partition in smaller ones so that parallelism can be aceived more accurately.
+So for e.g you are processing the data and you have one big partition and others are small one then with feature of 
+AQE will take care of this and break down that big partition in smaller ones so that parallelism can be aceived more accurately.
 
 How to enable AQE in spark ? It is auto enabled now after spark 3.2+
 
@@ -151,7 +162,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 Q. What is salting? 
 
-salting is a method we used previously to avoid data skewness, How it works is that for e.g you are processing the data and you have id column as a Key column, in that there are many 1's, some 2's and very few 3's, So in that case when the data will be joining it will be skewed so we will add salt key here, it could be like 1-a,1-b,1-c and we will add this salt key to our keyin roun robin fashion, now if the join is applied then it should not be skewed because each partitions will have a chance to process the data.  
+salting is a method we used previously to avoid data skewness, How it works is that for e.g you are processing the 
+data and you have id column as a Key column, in that there are many 1's, some 2's and very few 3's, So in that case 
+when the data will be joining it will be skewed so we will add salt key here, it could be like 1-a,1-b,1-c and we will 
+add this salt key to our keyin roun robin fashion, now if the join is applied then it should not be skewed because 
+each partitions will have a chance to process the data.  
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------
