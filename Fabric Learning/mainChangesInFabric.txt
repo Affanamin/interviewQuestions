@@ -1,0 +1,69 @@
+What are the main changes occured in Fabric (Observations):::
+
+
+
+1. Resource groups are replaced by workspaces, which act as the central containers for organizing all Fabric items.
+
+2. OneLake provides a unified data storage layer, allowing you to create Lakehouses and define internal/external tables, views, and materialized views. It also supports shortcuts to avoid data duplication.
+
+3. Dataflows Gen2 enables no-code/low-code data transformation using a Power Query-like user interface, making it easier for non-developers to work with data.
+
+4. Collaboration is enhanced across teams, enabling data engineers, analysts, ML engineers, and BI developers to work together seamlessly within the same workspace.
+
+5. All compute resources are serverless, including Spark notebooks, eliminating the need to manage or scale infrastructure manually.
+
+6. CI/CD pipelines are simplified, making it easier for data engineers to manage version control, deployment, and automation.
+
+7. Unified Compute Fabric (aka One Compute Engine)
+Fabric uses a unified compute engine across all workloads (Spark, SQL, Power BI, etc.), which means:
+
+- No more managing separate Synapse pools or Spark clusters.
+
+- Everything shares capacity (F SKUs), making resource management simpler.
+
+- Compute is fully serverless and scales with demand (unless restricted via capacity).
+
+
+8. Warehouse vs. Lakehouse vs. KQL DB
+Fabric supports multiple analytical models under one roof:
+
+- Lakehouse (for Spark/Delta-style access, open formats)
+
+- Warehouse (for T-SQL, relational-style querying)
+
+- KQL DB (for real-time, log, and telemetry analytics like Azure Data Explorer)
+
+This polyglot architecture removes the need to integrate separate services.
+
+
+9. Deep Integration with Power BI
+Power BI is native in Fabric:
+
+- Workspaces are shared across Data Engineering and BI teams.
+
+- Semantic models (Power BI datasets) can be created from warehouse/lakehouse without external connectors.
+
+- Better support for incremental refresh, row-level security, and DAX expressions directly in data model views.
+
+10. Governance and Security
+Uses Microsoft Purview behind the scenes for:
+
+- Data lineage
+
+- Cataloging
+
+- Sensitivity labels
+
+- Fine-grained access controls at workspace, item, and even column levels.
+
+- Security is simplified with OneLake-level permissions and workspace ACLs.
+
+
+11. Simplified CICD & Git Integration
+All items (pipelines, notebooks, semantic models, reports) can be versioned with Git integration.
+
+Deployment pipelines are native, no need for separate Azure DevOps/YAML if you don't want it.
+
+
+
+
