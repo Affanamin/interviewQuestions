@@ -1,0 +1,188 @@
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Azure Synapse Analytics::::
+
+"Once the data is modeled and stored in the Gold layer (Delta format in ADLS), we use Azure Synapse Analytics to serve as a modern data warehouse layer for reporting and analysis.
+
+Serverless SQL Pool & Managed Identity:
+
+We configured a serverless SQL pool in Synapse to query data directly from ADLS (Gold layer).
+
+Access is handled securely using Managed Identity, eliminating the need for credentials while ensuring secure access to external storage.
+
+External Tables & Views:
+
+We created external tables on top of the Delta files using defined schemas, allowing easy integration with tools like Power BI.
+
+Where needed, we also created views for complex business logic or transformations requested by BI teams. These views help reduce the load on Power BI and ensure consistency across reports.
+
+Automation via Pipelines & Stored Procedures:
+
+We built Synapse pipelines to automate the creation of external tables and views.
+
+For refreshes and new view integrations, we used stored procedures—this ensures the metadata is kept up to date and any schema changes are smoothly handled.
+
+Overall, Synapse Analytics acts as the serving layer in our architecture, bridging the Gold layer and Power BI dashboards."**
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Questions:::
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Why did you choose serverless SQL pool instead of dedicated SQL pool in Synapse?
+
+In serverless SQL pool you do not need to insert the data physically it is like a metadata layer upon the external data source, while in dedicated SQL pool te data stored physically in azure sql database, the cost of using dedicated SQL pool is pretty much high as compared to serverless secondly dedicated SQL gives ACID props, backups of time travel and we have obtained them using delta in our silver and gold layer so we donot need these added properties.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+How did you define and manage external tables in Synapse for your Gold layer Delta files?
+
+We need to define external tables with 3 different things,
+1. fileformat
+2. location of path
+3. managed identity or secret
+
+So we can create external table by giving the schema, file format  as delta, path as that gold layer path and managed identitiy key. 
+
+
+1.
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'pass@3005_abc';
+
+CREATE DATABASE SCOPED CREDENTIAL credential_aff
+WITH IDENTITY = 'Managed Identity'
+--------------------------------------------------------------------------------------
+2. 
+CREATE EXTERNAL DATA SOURCE source_gold
+WITH 
+(
+    LOCATION = 'https://adventureprojstorageacc.dfs.core.windows.net/gold',
+    CREDENTIAL = credential_aff
+) 
+--------------------------------------------------------------------------------------
+3.
+CREATE EXTERNAL FILE FORMAT file_format_name
+WITH (
+    FORMAT_TYPE = PARQUET,
+    DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec' 
+    );
+
+ Now using CETAS we can create external table:
+
+ CREATE EXTERNAL TABLE gold.extsales WITH (
+    LOCATION = 'extsales',
+    DATA_SOURCE = source_gold,
+    FILE_FORMAT = file_format_name
+) AS SELECT * from gold.sales;
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Can you explain the process you followed to handle schema changes in your external tables in Synapse, especially when the Delta schema in the Gold layer changes?
+
+To handle schema changes in external tables in Synapse, especially when using Delta as the underlying format in the Gold layer, you'll need to consider how schema evolution is managed between Delta tables and Synapse SQL pools. Since Delta tables in the Gold layer may evolve over time (such as adding new columns or changing data types), your external tables in Synapse should adapt to those changes as well.
+
+Here are a few ways to handle schema changes:
+
+1. Automatic Schema Evolution in Delta (Gold Layer)
+Delta Lake supports automatic schema evolution, which allows the schema of the Delta table to evolve when new columns are added.
+
+However, this change in schema needs to be reflected in your external tables in Synapse for Power BI or other BI tools to work seamlessly.
+
+2. Managing Schema Changes in Synapse
+Option 1: Recreate External Tables
+When schema changes occur, you can recreate the external tables in Synapse by altering the table definitions (for example, adding new columns or updating data types). You can automate this using Azure Synapse Pipelines to check for schema changes and recreate the external table.
+
+You might need to drop the old table and create a new one.
+
+DROP EXTERNAL TABLE IF EXISTS gold.extsales;
+CREATE EXTERNAL TABLE gold.extsales
+WITH (
+    LOCATION = 'extsales',
+    DATA_SOURCE = source_gold,
+    FILE_FORMAT = file_format_name
+) AS
+SELECT * FROM gold.sales;
+
+Automating via Pipelines: Set up a pipeline to monitor the Delta schema and automatically update the external tables when there are changes.
+
+Option 2: Handle Schema Drift
+If you want to handle schema changes more gracefully, you could automate schema checking and modification in the pipeline:
+
+Use Data Flows in ADF/Synapse to read Delta metadata, compare it with the current schema in Synapse, and apply the changes.
+
+If a new column is added to the Delta table, update the external table schema definition in Synapse to include that column.
+
+
+Using Views for Schema Management
+Instead of directly working with external tables in Power BI or other tools, you can create views on top of the external tables. This allows you to abstract the schema changes from the end-users (Power BI users, for example).
+
+When schema changes occur, you can update the views accordingly without affecting the external tables.
+
+Example SQL:
+CREATE OR ALTER VIEW gold.extsales_view AS
+SELECT * FROM gold.extsales;
+
+4. Scripted Updates to External Tables
+In some cases, you may want to programmatically check the schema of the Delta table (e.g., by reading its metadata) and adjust the external table schema in Synapse based on that.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How did you use managed identity to securely access the Gold layer in ADLS from Synapse?
+
+What were the key use cases for creating views on top of external tables? Can you give an example?
+
+How did you automate the creation of external tables and views? Was it done inside Synapse or triggered externally?
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Great — so to clarify, you're saying the automation of external table and view creation is done within Synapse Pipelines and triggered internally. That’s a solid architectural approach.
+
+Here's how such automation is typically implemented (feel free to confirm if you followed a similar process):
+
+
+✅ Typical Automation Workflow in Synapse Pipelines
+Trigger (Time or Event Based)
+
+Schedule trigger or event-based (e.g., after Gold layer update).
+
+Activities in Pipeline:
+
+Lookup Activity: To fetch metadata info (e.g., table names, schemas).
+
+Stored Procedure Activity: Executes T-SQL to create external tables/views.
+
+If Condition: To check if a table/view already exists or needs update.
+
+Script Activity: Executes dynamic SQL for external table/view creation using metadata.
+
+Using Parameters:
+
+Pass parameters like file path, table name, or view logic to make pipeline reusable across multiple entities.
+
+Security:
+
+Use Managed Identity in the pipeline linked services to securely access ADLS and SQL pools.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What role did stored procedures play in your Synapse workflows?
+
+How did you ensure that the data in Synapse (external tables/views) stays in sync with your Delta Gold layer updates?

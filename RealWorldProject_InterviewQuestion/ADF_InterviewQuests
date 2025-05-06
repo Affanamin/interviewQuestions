@@ -1,0 +1,149 @@
+
+
+ADF & Ingestion Questions
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Q.1: Can you explain the Medallion architecture in your project and why you chose Raw, Silver, and Gold layers?
+
+The Raw layer acts as a landing zone where data is ingested from various sources (Oracle DB, APIs, SFTP, etc.) using Azure Data Factory (ADF). No transformations are applied here; it serves as the immutable source of truth.
+
+In the Silver layer, we perform key data transformations such as cleansing, handling nulls and data types, de-duplication, timestamp formatting, and creating derived columns. We also implement SCD Type 2 logic using Delta Lake to maintain historical records. This layer is designed to serve data analysts and ML engineers.
+
+The Gold layer focuses on business-friendly, consumption-ready data. Here, we build dimensional models, separating fact and dimension tables, again using Delta for performance and reliability. BI tools like Power BI connect to this layer for reporting and dashboarding.
+
+This architecture allows better data governance, scalability, and tailored access for different stakeholders, improving both data quality and usability.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q.2: What challenges did you face when setting up the self-hosted Integration Runtime for Oracle on-prem, and how did you resolve them?
+
+To connect Azure Data Factory (ADF) with our on-prem Oracle database, we set up a Self-hosted Integration Runtime (IR). Since the Oracle database was behind a firewall and not exposed to the public internet, the self-hosted IR allowed secure communication between ADF in the cloud and our local DB environment.
+
+We installed the IR software on the on-prem machine hosting the Oracle DB and configured it with the private key generated in Azure. Setting this up was initially challenging due to network restrictions and authentication settings, but once we successfully registered the IR and tested the connection, we were able to ingest data as required.
+
+This setup enabled both full and incremental loads from the on-prem Oracle source into our Raw ADLS layer securely and reliably.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Q.3: How did you implement the watermarking logic for incremental loads in ADF? Can you describe the control mechanism used (e.g., parameters, variables)?
+
+We implemented incremental loads using a watermarking strategy driven by metadata. For each source table, we maintained a configuration file (stored in ADLS under the configs/ folder) that includes metadata like the watermark column name, last processed value, load type (full/incremental), and active flag.
+
+Initially, the watermark value is null, so a full load is performed. During the pipeline run, we use a Lookup activity to read the latest watermark value from the config file, then pass it as a parameter into a Copy Activity or Data Flow to filter data based on the last_updated_date column (or equivalent).
+
+Once the data is loaded successfully, we use a Data Flow to calculate the max value of the watermark column from the newly ingested data and overwrite the corresponding value in the config file (using sink transformations).
+
+This dynamic setup allows us to add or disable tables without changing the pipeline logic, making the process scalable and manageable.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+What was the structure and role of the CSV file used for controlling ingestion? How did it help in automation?
+
+As part of making our data pipeline dynamic and scalable, I created a metadata-driven ingestion framework using a CSV file stored in the /config/ directory of ADLS. This file contains rows for each source table and includes key metadata such as:
+
+Table name
+
+Load type (full/incremental)
+
+Sink container/folder path
+
+Watermark column name
+
+Active/inactive flag
+
+We use a Lookup activity in ADF to read this metadata file at the start of the pipeline. Based on these parameters, we dynamically control which tables to ingest, whether to apply full or incremental logic, and where to land the output in the data lake.
+
+This approach makes the pipeline modular, reusable, and easy to update — for example, adding a new table is as simple as appending a new row to the CSV, without any pipeline-level code changes. It also allows non-engineers to make updates if needed.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How did you ensure only active and required tables were ingested from Oracle, and how was this logic implemented in the pipeline?
+
+SAME AS ABOVE
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+You mentioned different source types (REST APIs, SFTP, etc.). How did you design your ADF pipeline to handle the heterogeneity of sources?
+
+Yes, I’ve worked with a variety of source types such as REST APIs, SFTP servers, and cloud storage formats (CSV, JSON, Parquet). For each source type, I created separate linked services and datasets in ADF.
+
+For REST APIs, I handled token-based authentication (OAuth/Bearer token) by configuring header parameters within the linked service. I also implemented pagination logic using query parameters and dynamic content in the dataset URL. This helped ingest large datasets from APIs in chunks.
+
+For SFTP, I created a linked service with SSH key authentication, and configured file pickup using wildcards and folder paths to ensure we fetch only relevant files.
+
+All these datasets had a common sink — an ADLS Gen2 container (typically the raw layer). This modular approach gave us the flexibility to support various data formats and sources while keeping the pipeline organized and easy to maintain.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What kind of data quality checks did you implement using Data Flows, and how did you route bad records to another container?
+
+We implemented several data quality rules using Mapping Data Flows in ADF. One of the key checks was on PIN codes — if the length of the PIN was less than 3 digits, we considered the record invalid. Similarly, we validated the data types of critical columns, such as dates and strings. If a column expected to be a date didn’t match the correct format, or a field had unexpected nulls, the row was flagged.
+
+In the data flow, we used Derived Column and Conditional Split transformations to apply these validations. Valid records were routed to the standard Silver layer, while failed records were sent to a separate "bad-records" directory in ADLS.
+
+This helped in isolating data issues without failing the entire pipeline, and also allowed data stewards or analysts to review the problematic rows. In some cases, we also stored the reason for failure alongside each bad record for traceability.
+
+If you ever added logging, alerts, or parameterized these checks across datasets, that would be great to mention too.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Did you use any logging or monitoring mechanisms in ADF to track pipeline failures or data quality issues?
+
+I’m aware that we can enhance this by using Azure Log Analytics, custom alerts, or Azure Monitor to create dashboards and alerts for pipeline failures or data flow anomalies. Implementing such observability is something I’m keen to add in future projects to improve operational visibility.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How did you manage schema changes in the source systems, especially for files like CSV, JSON, or Parquet?
+
+
+We handled schema evolution using Delta Lake's schema evolution capabilities. In our architecture, the raw layer in ADLS acted as the staging area — we ingest all source data as-is into it using ADF. Since ADF doesn’t enforce strict schema during copy operations, it’s resilient to changes in the source schema.
+
+For our silver layer, where transformations happen, we use Databricks notebooks to read from the raw layer and write to Delta tables. While writing, we enabled mergeSchema=True in the write operation. This allows us to automatically evolve the schema of the target Delta table if new columns are added in the source.
+
+This approach ensures:
+
+- Our pipelines don't break when new columns are added in the source systems (especially from Oracle on-prem).
+
+- We retain data consistency and historical changes through Delta Lake’s transaction log.
+
+- We reduce manual intervention for schema updates, which is critical for automated, scalable ETL.
+
+If you're asked a follow-up about schema drift detection or historical schema auditing, you can mention that Delta Lake maintains a transaction log which you can query using DESCRIBE HISTORY for schema change tracking.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+In case of a pipeline failure during incremental ingestion, what was your recovery strategy to prevent data loss or duplication?
+
+In our incremental ingestion pipelines in ADF, we implemented a few safeguards and had a clear approach to handling failures:
+
+1. Retry Policy: For critical activities like data copy and dataflows, we set the retry count to 3 with some delay between retries. This helps to handle transient issues like temporary network glitches or service interruptions.
+
+2. Failure Diagnostics: If the pipeline fails despite retries:
+
+- I use the ADF Monitoring tab to inspect the failed activity and get detailed error logs.
+
+- For lookup or dataflow errors, I check whether there was an issue in accessing the config file or incorrect transformations applied (e.g., schema mismatch).
+
+3. Root Cause & Fix:
+
+- For dataflow issues, I open the debug mode and inspect each transformation.
+
+- If the source table or column has changed, I update the config or handle it via schema evolution logic.
+
+4. Partial Load Recovery:
+
+- If the failure occurred after some data was ingested, I verify the last successful watermark and restart the pipeline from there to avoid duplication.
+
+5. Proactive Monitoring:
+
+- While we haven’t added custom alerts yet, I plan to integrate Azure Monitor or Log Analytics in the future for automated alerts and better observability.

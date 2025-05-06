@@ -1,0 +1,284 @@
+
+
+
+Databricks RealWorld Questions::::::::::::
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Mounting ADLS to Databricks:
+Can you explain the steps involved in securely mounting ADLS Gen2 containers to Databricks using service principal authentication? Why is app registration and secret scope management important in this process?
+
+To securely mount Azure Data Lake Storage Gen2 (ADLS) to Databricks, I followed these steps:
+
+App Registration:
+I registered two Azure AD applications — one for ADF and one for Databricks. This allows secure, service principal-based authentication to ADLS Gen2.
+
+Role Assignment:
+I went to the IAM (Access Control) settings of the ADLS account and assigned the "Storage Blob Data Contributor" role to the Databricks app registration. This ensures it has read/write access to containers.
+
+Secret Management via Azure Key Vault:
+I retrieved the client secret and storage account key, and stored them securely in Azure Key Vault.
+
+Mounting in Databricks:
+In Databricks, I accessed the secret using Databricks Secret Scope linked to Key Vault. Then I mounted the container using the dbutils.fs.mount() method:
+
+
+Code: 
+
+dbutils.fs.mount(
+  source = "wasbs://<container>@<storageaccount>.blob.core.windows.net/",
+  mount_point = "/mnt/<mountname>",
+  extra_configs = {
+    "fs.azure.account.key.<storageaccount>.blob.core.windows.net": dbutils.secrets.get(scope = "<scope-name>", key = "<key-name>")
+  }
+)
+
+
+Why It’s Important:
+
+App registration enables centralized credential management.
+
+Role-based access ensures least privilege.
+
+Mounting allows direct file access in Spark with simplified paths (/mnt/bronze, etc.).
+
+Using Key Vault and Secret Scope adds a layer of security and governance.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Data Cleaning in Silver Layer:
+How did you handle inconsistent date formats or malformed string values during transformation in the silver layer? Did you use PySpark functions or SQL transformations?
+
+In the Silver Layer, I used Spark functions to handle inconsistent date formats and malformed string values as follows:
+
+Date Format Handling:
+
+I encountered various inconsistent date formats, so I used type casting to standardize them. For example:
+
+CODE: 
+
+from pyspark.sql.functions import col
+df = df.withColumn("date_column", col("date_column").cast("date"))
+
+This allowed me to convert the date values to a consistent date format. I also used functions like to_date() or from_unixtime() to handle specific cases where the dates were in Unix timestamp or string format.
+
+Handling Malformed String Values:
+
+For malformed string values, I followed the project's defined rules. If the value met the rules, I applied transformation (e.g., replacing certain patterns or trimming extra spaces). I used regexp_replace() or when() for string pattern matching and transformations.
+
+If the string didn’t meet the defined rules (e.g., invalid characters), I decided to redirect the bad data to a separate "bad data" directory in ADLS for further investigation and correction. This ensured that only clean, valid data was passed downstream for analysis.
+
+After the transformation, I directed all rows that failed the validation checks into a "bad data" directory in ADLS. This helps in tracking and fixing issues while ensuring that the main data processing pipeline continues without interruption.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Handling Nulls and Duplicates:
+What approach did you take to identify and remove duplicates in large datasets efficiently in Databricks?
+
+To identify and remove duplicates in large datasets efficiently in Databricks, I used the following approach:
+
+Identifying Duplicates:
+
+To find duplicates, I used groupBy() combined with count(). This helped identify records with the same ID. If the count for any group was greater than 1, it indicated a duplicate record.
+
+
+from pyspark.sql import functions as F
+duplicate_df = df.groupBy("id").agg(F.count("id").alias("count")).filter(F.col("count") > 1)
+
+I used dropDuplicates() to remove duplicate records, but only after identifying which ones needed to be kept. In cases where I had to keep the first occurrence or the most recent entry, I sorted by a timestamp or another relevant field and then applied dropDuplicates():
+
+df = df.orderBy("timestamp_column", ascending=False).dropDuplicates(["id"])
+
+If I encountered missing values, I used different techniques based on the context:
+
+Imputation: For numerical columns, I used the mean or median for imputation. For categorical data, I might impute with the most frequent value:
+df = df.fillna({"numeric_column": df.agg({"numeric_column": "mean"}).collect()[0][0]})
+
+
+Filling with Specific Values: If I identified missing string values, I could fill them with "not available" or any placeholder value:
+
+df = df.fillna({"string_column": "not available"})
+
+Dropping Missing Data: In certain cases, I used dropna() to eliminate rows that had critical missing values (e.g., missing ID, date, or other key columns).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Feature Engineering Example:
+Can you give a concrete example of a feature you engineered using multiple columns, and how it added value for downstream consumers like ML engineers?
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SCD Type 2 in Delta Lake:
+How did you implement Slowly Changing Dimension (SCD) Type 2 using Delta Lake in Databricks? What merge logic did you use and how did you handle historical data?
+
+
+Yes, I implemented Slowly Changing Dimensions (SCD) Type 2 using Delta Lake’s MERGE operation in Databricks.
+
+The goal was to maintain historical changes to dimension records, such as customer or account data. Here's how I handled it:
+
+🧩 Step-by-Step SCD Type 2 Implementation:
+Compare new_df (incoming updates) and old_df (existing dimension data) using a unique key (e.g., customer_id).
+
+Match Condition:
+
+If a matching ID is found, we check for any changes in relevant fields (name, address, etc.).
+
+If there's a change, we:
+
+Expire the old record by setting is_active = 0 and updating the end_date (or updated_date) to current date.
+
+Insert a new record with updated data, is_active = 1, and start_date set to current date.
+
+No Match (New Record):
+
+If the ID doesn't exist in the target, we simply insert the new row as is_active = 1, with start_date = current_date, and end_date = null.
+
+Code:
+
+from pyspark.sql.functions import current_date
+
+# Mark current date
+new_df = new_df.withColumn("start_date", current_date()) \
+               .withColumn("end_date", lit(None)) \
+               .withColumn("is_active", lit(1))
+
+# Merge with Delta table
+deltaTable.alias("target").merge(
+    source=new_df.alias("source"),
+    condition="target.id = source.id AND target.is_active = 1"
+).whenMatchedUpdate(condition="target.hash_col != source.hash_col", set={
+    "is_active": "0",
+    "end_date": "current_date()"
+}).whenNotMatchedInsert(values={
+    "id": "source.id",
+    "name": "source.name",
+    "start_date": "current_date()",
+    "end_date": "null",
+    "is_active": "1"
+}).execute()
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Delta Lake Schema Evolution:
+You mentioned using mergeSchema = true. In what scenario did schema evolution become necessary, and how did it prevent pipeline failures?
+
+Yes, I used mergeSchema = true when writing data into Delta tables to ensure schema evolution is handled smoothly.
+This is especially helpful in production pipelines where source schema might change — for example, if a new column is added in the source database or file.
+Instead of breaking the pipeline, Delta Lake will merge the new schema with the existing one and append the new column to the Delta table automatically.
+This ensures zero downtime, robustness, and data pipeline resilience.
+
+df.write \
+  .format("delta") \
+  .mode("append") \
+  .option("mergeSchema", "true") \
+  .save("/mnt/silver/table_path")
+
+This is particularly useful in raw-to-silver or silver-to-gold transitions, where upstream sources can evolve over time.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Gold Layer Aggregations:
+When creating the star schema in the gold layer, how did you decide what becomes a fact vs. a dimension? Can you walk through an example of one fact and two related dimensions?
+
+Yes, I have created Fact and Dimension tables using a star schema model in the Gold layer. Fact tables are used to store aggregated, measurable data — for example:
+
+totalTransCount
+
+totalDisputes
+
+daysOfInactivity
+
+purchaseCount
+
+These facts are calculated from transactional-level data and are linked to dimension tables using foreign keys.
+
+Dimension tables store descriptive information such as:
+
+Customer details (customer_dim)
+
+Account info (account_dim)
+
+Card details (card_dim)
+
+Each dimension table has a primary key, and the fact table references them. This structure forms a star schema, which makes querying faster and reporting more efficient for BI tools like Power BI or Synapse Analytics.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Optimization:
+Did you apply any optimization techniques while writing large datasets into the Silver or Gold layer (e.g., partitioning, Z-ordering, caching)?
+
+"Yes, we used Delta Lake tables extensively, which provided strong performance and reliability benefits. Here’s how we optimized our data model in the Gold layer:
+
+Partitioning:
+We partitioned our Delta tables by year and month because most of our queries are time-based. This enabled effective data skipping and improved query performance.
+
+Caching:
+For frequently used intermediate DataFrames during transformations or joins, we used Spark's .cache() to improve performance during iterative processing in notebooks.
+
+Small File Management:
+Since Delta tables can generate many small files during writes, we routinely ran:
+
+OPTIMIZE to compact them into larger files,
+
+VACUUM to clean up obsolete files, and
+
+ZORDER BY on columns like customer_id and account_id to improve data skipping for common filters.
+
+These optimizations significantly improved performance for downstream BI queries and batch jobs."**
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Access Control:
+Once the data is available in Databricks, how did you control access for different teams like analysts and BI developers?
+
+"Once the data was available in Databricks, we controlled access using a combination of IAM roles and Unity Catalog.
+
+IAM (Identity and Access Management) was used at the storage level (ADLS Gen2) to manage who could access the underlying data files. We assigned appropriate roles such as 'Storage Blob Data Contributor' or 'Reader' at the container or directory level.
+
+Unity Catalog was used within Databricks to enforce fine-grained access control on databases, tables, and views. We created catalogs and schemas, and assigned user or group-level privileges (like SELECT, MODIFY, USAGE) to ensure proper data governance and auditing.
+
+This combination helped ensure that only the right personas (e.g., data engineers, analysts, ML engineers) had access to specific datasets, aligning with both security and compliance policies."**
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Debugging & Performance:
+If a Databricks job is running slower than expected in Silver layer transformations, what steps would you take to identify and fix the performance bottleneck?
+
+"If a Databricks job is running slower than usual, I follow a structured approach to diagnose and resolve the issue:
+
+Check Data Volume: I first validate whether the volume of input data has increased. If it hasn't, the problem likely lies within the job's execution.
+
+Use Spark UI for Analysis: I inspect the Spark UI to identify performance bottlenecks. I look at:
+
+Executor timelines to detect skewed stages (i.e., some tasks taking significantly longer).
+
+Shuffle operations and stage durations.
+
+Mitigate Skewness:
+
+If I find data skew, I address it using techniques like salting or repartitioning.
+
+I also explore broadcast joins when one side of the join is small, or bucketed joins to minimize shuffle overhead.
+
+Resource Optimization:
+
+If code optimization isn't sufficient, I consider increasing cluster resources by tuning autoscaling, e.g., adjusting from 2–20 workers to 2–30.
+
+Additional Checks:
+
+Evaluate caching strategies, data partitioning, or excessive small files.
+
+Run OPTIMIZE, ZORDER, and VACUUM if applicable for Delta tables.
+
+This approach allows me to balance performance tuning across data, code, and infrastructure layers."**
